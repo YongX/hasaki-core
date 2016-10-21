@@ -2,7 +2,7 @@
 
 const mkdirp = require('mkdirp');
 const path = require('path');
-const getDirName = path.projectRootPath;
+const getDirName = path.dirname;
 const fs = require('fs');
 
 // default .hasakirc configuration
@@ -67,6 +67,7 @@ class Hasaki {
     const content = rule.content || '';
     const template = rule.template;
     let fileContent;
+    let templateContent = '';
 
     // 拿到要生成的文件的路径
     const filePath = path.join(this.projectRootPath, _path);
@@ -76,18 +77,23 @@ class Hasaki {
     const targetFile = filePath + fileName + `.${extension}`;
     // 如果有设置模板路径，则使用模板文件
     if (template) {
-      let defaultContent = fs.readFileSync(path.join(this.projectRootPath, this.templateRootPath, template), 'utf-8');
-      // 替换模板变量
-      defaultContent = defaultContent.replace(new RegExp(this.placeholder, 'gi'), (m, name) => {
-        if (name === this.placeholder) {
-          return this.pageName;
-        } else if (name === this.placeholder.toUpperCase()) {
-          return this.pageName.toUpperCase();
-        } else {
-          return this.pageName[0].toUpperCase() + this.pageName.slice(1);
-        }
-      });
-      fileContent = defaultContent;
+      const templateFilePath = path.join(this.projectRootPath, this.templateRootPath, template);
+      if(fs.existsSync(templateFilePath)) {
+        templateContent = fs.readFileSync(templateFilePath, 'utf-8');
+        // 替换模板变量
+        templateContent = templateContent.replace(new RegExp(this.placeholder, 'gi'), (m, name) => {
+          if (name === this.placeholder) {
+            return this.pageName;
+          } else if (name === this.placeholder.toUpperCase()) {
+            return this.pageName.toUpperCase();
+          } else {
+            return this.pageName[0].toUpperCase() + this.pageName.slice(1);
+          }
+        });
+      } else {
+        console.warn('template', templateFilePath, 'doesn\'t exist.');
+      }
+      fileContent = templateContent;
     } else {
       fileContent = content;
     }
