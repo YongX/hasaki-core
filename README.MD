@@ -6,8 +6,12 @@ hasaki 项目文件读写功能核心代码，可以使用 node 来单独使用�
 ```
 // node version >= v5.8.0
 
-var rulesParameter = ['rule3'];
 var Hasaki = require('hasaki');
+
+var rulesParameter = ['rule3'];
+var pageName = 'home';
+
+var hasaki = new Hasaki(pageName);
 Hasaki.executeRule(rulesParameter);
 ```
 
