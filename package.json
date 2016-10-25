@@ -1,6 +1,6 @@
 {
   "name": "hasaki-core",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "hasaki 项目文件读写功能核心代码，可以使用 node 来单独使用。",
   "main": "hasaki.js",
   "scripts": {
