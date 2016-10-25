@@ -4,6 +4,7 @@ const mkdirp = require('mkdirp');
 const path = require('path');
 const getDirName = path.dirname;
 const fs = require('fs');
+const chalk = require('chalk');
 
 // default .hasakirc configuration
 const defaultTemplateRootPath = './';
@@ -31,7 +32,7 @@ class Hasaki {
     try {
       hasakiConfig = JSON.parse(fs.readFileSync(this.configFilePath, 'utf-8'));
     } catch (e) {
-      console.log(`JSON.parse ${this.configFilePath} file error: `, e.stack);
+      console.log(chalk.red.bold(`JSON.parse ${this.configFilePath} file error: `, e.stack));
     }
     this.templateRootPath = hasakiConfig.templateRootPath || defaultTemplateRootPath;
     this.rules = Array.isArray(hasakiConfig.rules) ? hasakiConfig.rules : defaultRules;
@@ -51,10 +52,10 @@ class Hasaki {
             return true;
           }
           return false;
-        })
+        });
       });
     } else {
-      console.log('no rule applied');
+      console.log(chalk.red.bold('no rule applied'));
     }
     return this;
   }
@@ -99,8 +100,8 @@ class Hasaki {
     }
 
     Hasaki.writeFile(targetFile, fileContent, (err) => {
-      if (err) console.log(err);
-      console.log(targetFile, 'success')
+      if (err) console.log(chalk.red.bold(err));
+      console.log(chalk.yellow.bold('  create file ') + chalk.cyan.bold(targetFile) + chalk.yellow.bold(' success'));
     });
   }
 }
