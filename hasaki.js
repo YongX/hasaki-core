@@ -11,6 +11,10 @@ const defaultTemplateRootPath = './';
 const defaultRules = [];
 const defaultPlaceholder = '__name';
 
+const logError = function (text) {
+  console.log(chalk.red.bold(text));
+};
+
 class Hasaki {
   static writeFile(path, contents, cb) {
     mkdirp(getDirName(path), function (err) {
@@ -32,7 +36,7 @@ class Hasaki {
     try {
       hasakiConfig = JSON.parse(fs.readFileSync(this.configFilePath, 'utf-8'));
     } catch (e) {
-      console.log(chalk.red.bold(`JSON.parse ${this.configFilePath} file error: `, e.stack));
+      logError(`JSON.parse ${this.configFilePath} file error: ${e.stack}`);
     }
     this.templateRootPath = hasakiConfig.templateRootPath || defaultTemplateRootPath;
     this.rules = Array.isArray(hasakiConfig.rules) ? hasakiConfig.rules : defaultRules;
@@ -42,20 +46,28 @@ class Hasaki {
 
   executeRule(rulesParameter) {
     if (rulesParameter.length > 0) {
-      rulesParameter.forEach(currentRule => {
+      rulesParameter.forEach((currentRule) => {
+        let findRule = false;
         this.rules.some(rule => {
-          const applyRuleName = rule[currentRule]
+          const applyRuleName = rule[currentRule];
           if (Array.isArray(applyRuleName)) {
+            findRule = true;
             this.executeRule(applyRuleName);
           } else if (applyRuleName) {
+            findRule = true;
             this._execute(applyRuleName);
             return true;
+          } else {
+            findRule = false;
           }
           return false;
         });
+        if (!findRule) {
+          logError(`${currentRule} not find in ${this.configFilePath}`);
+        }
       });
     } else {
-      console.log(chalk.red.bold('no rule applied'));
+      logError('no rule applied');
     }
     return this;
   }
@@ -92,7 +104,7 @@ class Hasaki {
           }
         });
       } else {
-        console.warn('template', templateFilePath, 'doesn\'t exist.');
+        logError(`template ${templateFilePath} doesn\'t exist.`);
       }
       fileContent = templateContent;
     } else {
@@ -100,7 +112,7 @@ class Hasaki {
     }
 
     Hasaki.writeFile(targetFile, fileContent, (err) => {
-      if (err) console.log(chalk.red.bold(err));
+      if (err) logError(err);
       console.log(chalk.yellow.bold('  create file ') + chalk.cyan.bold(targetFile) + chalk.yellow.bold(' success'));
     });
   }
