@@ -4,7 +4,7 @@
   "placeholder": "",
   "rules": [
     {
-      "containerRule": {
+      "actionRule": {
         "extension": "js",
         "suffix": "",
         "prefix": "_",
@@ -14,16 +14,21 @@
     },
     {
       "pageRule": {
-        "templates": ["app/pages/Appointment"]
+        "templates": [
+          "app/pages/Appointment"
+        ]
       }
     },
     {
       "sagaRule": {
-        "templates": ["app/pages/Appointment", "_template/action.js", {
-          "source": "app/saga/appointment",
-          "placeholder": "appointment",
-          "keepFileName": false
-        }]
+        "templates": [
+          {
+            "source": "app/saga/appointment",
+            "placeholder": "appointment",
+            "keepFileName": false
+          },
+          "app/actions/appointment.js"
+        ]
       }
     },
     {
@@ -32,14 +37,6 @@
         "suffix": "",
         "path": "./actions/",
         "template": "action.js"
-      }
-    },
-    {
-      "sagaRule": {
-        "extension": "js",
-        "suffix": "saga",
-        "path": "./saga/",
-        "content": "haha"
       }
     },
     {

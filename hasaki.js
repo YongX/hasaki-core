@@ -1,5 +1,5 @@
 "use strict";
-
+require('shelljs/global');
 const mkdirp = require('mkdirp');
 const path = require('path');
 const getDirName = path.dirname;
@@ -13,6 +13,7 @@ const defaultPlaceholder = '__name';
 
 const logError = function (text) {
   console.log(chalk.red.bold(text));
+  exit(1);
 };
 
 class Hasaki {
@@ -42,6 +43,7 @@ class Hasaki {
     this.rules = Array.isArray(hasakiConfig.rules) ? hasakiConfig.rules : defaultRules;
     this.placeholder = hasakiConfig.placeholder || defaultPlaceholder;
     this.pageName = pageName;
+    this.keepFileName = true;
     // rule fields
     this.suffixInRule = '';
     this.prefixInRule = '';
@@ -132,11 +134,12 @@ class Hasaki {
     });
   }
 
-  replaceContentWithPlaceholder(templateContent) {
-    return templateContent.replace(new RegExp(this.placeholder, 'gi'), (m, name) => {
-      if (name === this.placeholder) {
+  replaceContentWithPlaceholder(templateContent, _placeholder) {
+    const placeholder = this.placeholder || _placeholder;
+    return templateContent.replace(new RegExp(placeholder, 'gi'), (name) => {
+      if (name === placeholder) {
         return this.pageName;
-      } else if (name === this.placeholder.toUpperCase()) {
+      } else if (name === placeholder.toUpperCase()) {
         return this.pageName.toUpperCase();
       } else {
         return this.pageName[0].toUpperCase() + this.pageName.slice(1);
@@ -144,34 +147,60 @@ class Hasaki {
     });
   }
 
-  handleTemplates(templates, fileName) {
-    const _walkAndWriteFile = function (template) {
-      let targetFile;
+  handleTargetFiles(filePath, fileType) {
+    const _walkAndReplaceFile = function (template) {
       if (fs.existsSync(template)) {
         const fileType = fs.statSync(template);
         if (fileType.isDirectory()) {
-          // this._parentPath = path.join(this._parentPath, template);
-          // console.log(template);
-
-          fs.readdirSync(template).map(file => _walkAndWriteFile.call(this, path.join(template, file)));
+          fs.readdirSync(template).map(file => _walkAndReplaceFile.call(this, path.join(template, file)));
         } else if (fileType.isFile()) {
-          let tempName = template.split('/').pop();
+          let tempName = template;
           let content = fs.readFileSync(template, 'utf-8');
-          if (this._parentPath) {
-            if (!this.keepFileName) {
-              // 不保留原来目录的名字
-              tempName = this.replaceContentWithPlaceholder(tempName);
-            }
-            targetFile = path.join(this._parentPath, this.pageName, tempName);
-            if (this.usePlaceholder) {
-              content = this.replaceContentWithPlaceholder(content);
-            }
-          } else {
-            const fileExtension = tempName.split('.').pop();
-            targetFile = path.join(template, '../', fileName + '.' + fileExtension);
+          if (!this.keepFileName) {
+            // 不保留原来目录的名字
+            tempName = this.replaceContentWithPlaceholder(tempName);
+            fs.renameSync(template, tempName);
           }
-          // Hasaki.writeFile(targetFile, content);
-          // console.log(targetFile);
+          if (this.usePlaceholder) {
+            content = this.replaceContentWithPlaceholder(content);
+          }
+          Hasaki.writeFile(tempName, content);
+        } else {
+          logError(`${template}: Invalid file type.`)
+        }
+      } else {
+        logError(template + ' not found');
+      }
+    };
+    if (fileType === 'directory') {
+      fs.readdirSync(filePath).map(file => _walkAndReplaceFile.call(this, path.join(filePath, file)));
+    } else {
+      _walkAndReplaceFile.call(this, filePath);
+    }
+  }
+
+  handleTemplates(templates) {
+    const _walkAndWriteFile = function (template) {
+      if (fs.existsSync(template)) {
+        const fileType = fs.statSync(template);
+        const targetPath = path.join(this._parentPath, this.pageName);
+
+        if (fileType.isDirectory()) {
+          if (fs.existsSync(targetPath)) {
+            // 目录已存在，不做任何操作
+            return false;
+          }
+          cp('-R', template, targetPath);
+          this.handleTargetFiles(targetPath, 'directory');
+        } else if (fileType.isFile()) {
+          const ext = template.split('.').pop();
+          const targetFile = `${targetPath}.${ext}`;
+          if (fs.existsSync(targetFile)) {
+            // 目录已存在，不做任何操作
+            return false;
+          }
+          cp(template, targetFile);
+          this.handleTargetFiles(targetFile, 'file');
         } else {
           logError(`${template}: Invalid file type.`)
         }
@@ -181,13 +210,7 @@ class Hasaki {
     };
     const _analysisTemplate = function (temp) {
       if (fs.existsSync(temp)) {
-        const fileType = fs.statSync(temp);
-        if (fileType.isDirectory()) {
-          // 如果是一个文件的路径
-          this._parentPath = temp.substr(0, temp.lastIndexOf('/'));
-        } else {
-          this._parentPath = '';
-        }
+        this._parentPath = temp.substr(0, temp.lastIndexOf('/'));
       }
       _walkAndWriteFile.call(this, temp);
     };
@@ -199,7 +222,9 @@ class Hasaki {
         _analysisTemplate.call(this, template);
       } else if (pathType === '[object Object]') {
         this.placeholder = template.placeholder || '';
-        this.keepFileName = template.keepFileName || true;
+        if (typeof template.keepFileName === 'boolean') {
+          this.keepFileName = template.keepFileName;
+        }
         this.usePlaceholder = true;
         _analysisTemplate.call(this, template.source);
       }
