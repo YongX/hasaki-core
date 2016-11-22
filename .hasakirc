@@ -13,6 +13,20 @@
       }
     },
     {
+      "pageRule": {
+        "templates": ["app/pages/Appointment"]
+      }
+    },
+    {
+      "sagaRule": {
+        "templates": ["app/pages/Appointment", "_template/action.js", {
+          "source": "app/saga/appointment",
+          "placeholder": "appointment",
+          "keepFileName": false
+        }]
+      }
+    },
+    {
       "actionRule": {
         "extension": "js",
         "suffix": "",
