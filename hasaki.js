@@ -44,6 +44,7 @@ class Hasaki {
     this.placeholder = hasakiConfig.placeholder || defaultPlaceholder;
     this.pageName = pageName;
     this.keepFileName = true;
+    this.targetDirectory = null;
     // rule fields
     this.suffixInRule = '';
     this.prefixInRule = '';
@@ -135,7 +136,7 @@ class Hasaki {
   }
 
   replaceContentWithPlaceholder(templateContent, _placeholder) {
-    const placeholder = this.placeholder || _placeholder;
+    const placeholder = typeof _placeholder !== 'undefined' ? _placeholder : this.placeholder;
     return templateContent.replace(new RegExp(placeholder, 'gi'), (name) => {
       if (name === placeholder) {
         return this.pageName;
@@ -209,8 +210,21 @@ class Hasaki {
       }
     };
     const _analysisTemplate = function (temp) {
-      if (fs.existsSync(temp)) {
+      if (this.targetDirectory) {
+        if (fs.existsSync(this.targetDirectory)) {
+          const fileType = fs.statSync(this.targetDirectory);
+          if (fileType.isDirectory()) {
+            this._parentPath = this.targetDirectory;
+          } else {
+            logError(`${this.targetDirectory} is not a valid directory`);
+          }
+        } else {
+          logError(`${this.targetDirectory} is not a valid directory`);
+        }
+      } else if (fs.existsSync(temp)) {
         this._parentPath = temp.substr(0, temp.lastIndexOf('/'));
+      } else {
+        logError(`${temp} is not a valid directory`);
       }
       _walkAndWriteFile.call(this, temp);
     };
@@ -222,6 +236,7 @@ class Hasaki {
         _analysisTemplate.call(this, template);
       } else if (pathType === '[object Object]') {
         this.placeholder = template.placeholder || '';
+        this.targetDirectory = template.target || null;
         if (typeof template.keepFileName === 'boolean') {
           this.keepFileName = template.keepFileName;
         }

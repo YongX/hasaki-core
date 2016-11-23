@@ -15,7 +15,10 @@
     {
       "pageRule": {
         "templates": [
-          "app/pages/Appointment"
+          {
+            "source": "app/pages/Appointment",
+            "target": "app/test"
+          }
         ]
       }
     },
