@@ -168,7 +168,10 @@ class Hasaki {
           if (this.usePlaceholder) {
             content = this.replaceContentWithPlaceholder(content);
           }
-          Hasaki.writeFile(tempName, content);
+          Hasaki.writeFile(tempName, content, (err) => {
+            if (err) logError(err);
+            console.log(chalk.yellow.bold('  create file ') + chalk.cyan.bold(tempName) + chalk.yellow.bold(' success'));
+          });
         } else {
           logError(`${template}: Invalid file type.`)
         }
