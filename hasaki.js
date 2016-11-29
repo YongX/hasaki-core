@@ -137,6 +137,9 @@ class Hasaki {
 
   replaceContentWithPlaceholder(templateContent, _placeholder) {
     const placeholder = typeof _placeholder !== 'undefined' ? _placeholder : this.placeholder;
+    if (placeholder === '') {
+      return templateContent;
+    }
     return templateContent.replace(new RegExp(placeholder, 'gi'), (name) => {
       if (name === placeholder) {
         return this.pageName;
