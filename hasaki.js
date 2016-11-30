@@ -158,19 +158,26 @@ class Hasaki {
         if (fileType.isDirectory()) {
           fs.readdirSync(template).map(file => _walkAndReplaceFile.call(this, path.join(template, file)));
         } else if (fileType.isFile()) {
-          let tempName = template;
+          let tempNamePath = template;
           let content = fs.readFileSync(template, 'utf-8');
           if (!this.keepFileName) {
             // 不保留原来目录的名字
-            tempName = this.replaceContentWithPlaceholder(tempName);
-            fs.renameSync(template, tempName);
+            tempNamePath = this.replaceContentWithPlaceholder(tempNamePath);
+            // 补上前缀和后缀
+            let _tempNamePath = tempNamePath.split('/');
+            let _tempName = _tempNamePath.pop()
+              .replace(/(.*?)(\.\w+$)/, `${this.prefixInRule}$1${this.suffixInRule}$2`);
+            _tempNamePath.push(_tempName);
+            tempNamePath = _tempNamePath.join('/');
+            fs.renameSync(template, tempNamePath);
           }
           if (this.usePlaceholder) {
             content = this.replaceContentWithPlaceholder(content);
           }
-          Hasaki.writeFile(tempName, content, (err) => {
+          Hasaki.writeFile(tempNamePath, content, (err) => {
             if (err) logError(err);
-            console.log(chalk.yellow.bold('  create file ') + chalk.cyan.bold(tempName) + chalk.yellow.bold(' success'));
+            console.log(chalk.yellow.bold('  create file ') + chalk.cyan.bold(tempNamePath) +
+              chalk.yellow.bold(' success'));
           });
         } else {
           logError(`${template}: Invalid file type.`)
@@ -243,6 +250,8 @@ class Hasaki {
       } else if (pathType === '[object Object]') {
         this.placeholder = template.placeholder || '';
         this.targetDirectory = template.target || null;
+        this.prefixInRule = template.prefix || '';
+        this.suffixInRule = template.suffix || '';
         if (typeof template.keepFileName === 'boolean') {
           this.keepFileName = template.keepFileName;
         }
